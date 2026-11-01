@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Senkozzz Audio Studio — Boost Pro & MP3 Exporter</title>
+<!-- lamejs mã hóa MP3 -->
+<script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+<style>
+  :root{
+    --accent:#ff2d55; --accent2:#7c4dff;
+    --bg:#0a0a12; --card:rgba(30,30,42,.72);
+    --text:#fff; --muted:#b8b8c8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    color:var(--text);background:var(--bg);background-size:cover;background-position:center;
+    background-attachment:fixed;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;
+    background:linear-gradient(180deg,rgba(10,10,18,.7),rgba(10,10,18,.92));
+    z-index:0;pointer-events:none;}
+  .wrap{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:14px;}
+
+  .header{display:flex;align-items:center;gap:12px;padding:14px;
+    background:rgba(15,15,22,.85);backdrop-filter:blur(18px);
+    border:1px solid rgba(255,255,255,.1);border-radius:18px;
+    margin-bottom:12px;box-shadow:0 8px 30px rgba(0,0,0,.5);}
+  .logo{width:52px;height:52px;border-radius:14px;flex-shrink:0;
+    display:grid;place-items:center;font-weight:900;font-size:22px;color:#fff;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    box-shadow:0 0 20px rgba(255,45,85,.6),inset 0 0 14px rgba(255,255,255,.15);
+    overflow:hidden;position:relative;border:1px solid rgba(255,255,255,.2);}
+  .title{flex:1;min-width:0;}
+  .title h1{font-size:16px;font-weight:800;line-height:1.1;}
+  .title small{display:block;font-size:10px;color:var(--muted);margin-top:3px;}
+  .tag{font-size:10px;font-weight:900;letter-spacing:2px;padding:5px 9px;border-radius:8px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    box-shadow:0 0 12px rgba(124,77,255,.65);flex-shrink:0;}
+
+  .tabs{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;
+    padding-bottom:4px;scrollbar-width:none;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{flex:0 0 auto;padding:8px 12px;border-radius:10px;border:none;
+    font-size:11px;font-weight:700;cursor:pointer;
+    background:rgba(255,255,255,.08);color:var(--muted);
+    transition:.2s;white-space:nowrap;}
+  .tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+    box-shadow:0 4px 14px rgba(255,45,85,.4);}
+
+  .card{background:var(--card);backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,.08);border-radius:16px;
+    padding:14px;margin-bottom:12px;display:none;}
+  .card.show{display:block;}
+  .card h3{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;
+    color:var(--muted);font-weight:700;margin-bottom:10px;}
+
+  .drop{border:2px dashed rgba(255,255,255,.2);border-radius:14px;
+    padding:20px 14px;text-align:center;cursor:pointer;
+    transition:.25s;background:rgba(0,0,0,.2);}
+  .drop:hover,.drop.drag{border-color:var(--accent);background:rgba(255,45,85,.08);}
+  .drop-icon{font-size:32px;margin-bottom:6px;}
+  .drop-text{font-size:13px;font-weight:600;}
+  .drop-hint{font-size:10px;color:var(--muted);margin-top:4px;}
+  input[type=file]{display:none;}
+
+  .track-info{display:flex;align-items:center;gap:10px;padding:10px 12px;
+    background:rgba(0,0,0,.3);border-radius:12px;margin-top:10px;font-size:12px;}
+  .track-info .ic{width:34px;height:34px;border-radius:9px;flex-shrink:0;
+    display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:16px;}
+  .track-info .nm{flex:1;min-width:0;}
+  .track-info .nm b{display:block;font-weight:700;font-size:12px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .track-info .nm span{font-size:10px;color:var(--muted);}
+
+  .progress-wrap{display:flex;align-items:center;gap:8px;margin-top:10px;
+    font-size:11px;color:var(--muted);}
+  .progress-bar{flex:1;height:6px;border-radius:6px;background:rgba(255,255,255,.08);
+    cursor:pointer;position:relative;overflow:hidden;}
+  .progress-fill{position:absolute;left:0;top:0;bottom:0;width:0%;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));}
+
+  .controls{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px;}
+  .ctrl{padding:10px 6px;border-radius:12px;border:none;cursor:pointer;
+    background:rgba(255,255,255,.08);color:#fff;font-size:16px;font-weight:700;
+    transition:.2s;display:grid;place-items:center;}
+  .ctrl:hover{background:rgba(255,255,255,.15);}
+  .ctrl:active{transform:scale(.94);}
+  .ctrl.main{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    box-shadow:0 4px 16px rgba(255,45,85,.45);}
+  .ctrl:disabled{opacity:.35;cursor:not-allowed;}
+
+  .slider-row{margin:12px 0;}
+  .slider-row .top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;}
+  .slider-row .top b{font-weight:700;}
+  .slider-row .top span{color:var(--accent);font-weight:800;font-variant-numeric:tabular-nums;}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;
+    border-radius:6px;background:rgba(255,255,255,.1);outline:none;cursor:pointer;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;
+    width:18px;height:18px;border-radius:50%;background:#fff;
+    box-shadow:0 0 10px rgba(255,45,85,.9);cursor:pointer;}
+
+  .presets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px;}
+  .preset{padding:10px 6px;border-radius:12px;border:1px solid rgba(255,255,255,.1);
+    background:rgba(255,255,255,.05);color:#fff;font-size:11px;font-weight:700;
+    cursor:pointer;transition:.2s;}
+  .preset:hover{background:rgba(255,255,255,.12);}
+  .preset.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border-color:transparent;box-shadow:0 4px 16px rgba(255,45,85,.4);}
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+  .toggle-row:last-child{border-bottom:none;}
+  .toggle-row label{font-size:12px;flex:1;}
+  .toggle-row small{display:block;font-size:10px;color:var(--muted);margin-top:2px;}
+  .switch{position:relative;width:40px;height:22px;flex-shrink:0;}
+  .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2;}
+  .switch span{position:absolute;inset:0;background:#333;border-radius:22px;
+    transition:.25s;pointer-events:none;}
+  .switch span::before{content:'';position:absolute;height:16px;width:16px;left:3px;top:3px;
+    background:#fff;border-radius:50%;transition:.25s;}
+  .switch input:checked+span{background:linear-gradient(135deg,var(--accent),var(--accent2));}
+  .switch input:checked+span::before{transform:translateX(18px);}
+
+  canvas#spectrumCanvas{width:100%;height:60px;background:rgba(0,0,0,.4);
+    border-radius:12px;margin-top:10px;display:block;}
+
+  .btn-wide{width:100%;padding:12px;border-radius:12px;border:none;
+    font-size:12px;font-weight:700;cursor:pointer;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#fff;box-shadow:0 4px 16px rgba(255,45,85,.4);
+    transition:.2s;margin-top:8px;}
+  .btn-wide.dan{background:rgba(255,45,85,.2);color:#ff8aa0;box-shadow:none;}
+  .btn-wide.suc{background:linear-gradient(135deg,#00c853,#00e676);
+    box-shadow:0 4px 16px rgba(0,200,83,.4);}
+  .btn-wide:disabled{opacity:.4;cursor:not-allowed;filter:none;}
+
+  .toast{position:fixed;left:50%;bottom:24px;
+    transform:translateX(-50%) translateY(120%);
+    padding:10px 18px;border-radius:12px;
+    background:rgba(30,30,42,.95);
+    border:1px solid rgba(255,255,255,.15);
+    font-size:12px;font-weight:600;z-index:9999;
+    transition:transform .3s ease;
+    box-shadow:0 8px 30px rgba(0,0,0,.6);backdrop-filter:blur(10px);
+    max-width:90vw;}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+
+  .footer{text-align:center;font-size:10px;color:var(--muted);padding:12px 0 20px;}
+  .footer b{color:var(--accent);letter-spacing:2px;}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="header">
+    <div class="logo">⚡</div>
+    <div class="title">
+      <h1>Senkozzz Audio Studio</h1>
+      <small>Boost Pro — Extreme Bass & Vocal Boost</small>
+    </div>
+    <div class="tag">PRO</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="play">🎵 Nhạc</button>
+    <button class="tab" data-tab="boost">🔊 Boost</button>
+    <button class="tab" data-tab="vocal">🎤 Vocal</button>
+    <button class="tab" data-tab="eq">🎚️ EQ</button>
+    <button class="tab" data-tab="voice">🗣️ Đổi giọng</button>
+    <button class="tab" data-tab="split">✂️ Tách</button>
+    <button class="tab" data-tab="export">📥 Xuất MP3</button>
+  </div>
+
+  <!-- NHẠC -->
+  <div class="card show" data-tab="play">
+    <h3>📁 Chọn file</h3>
+    <div class="drop" id="drop">
+      <div class="drop-icon">🎵</div>
+      <div class="drop-text">Bấm để chọn nhạc</div>
+      <div class="drop-hint">Hỗ trợ: MP3 WAV M4A FLAC OGG</div>
+    </div>
+    <input type="file" id="fileInput" accept="audio/*">
+    <div class="track-info" id="trackInfo" style="display:none;">
+      <div class="ic">🎵</div>
+      <div class="nm">
+        <b id="trackName">Chưa chọn</b>
+        <span id="trackMeta">—</span>
+      </div>
+    </div>
+    <div class="progress-wrap" id="progressWrap" style="display:none;">
+      <span id="timeNow">0:00</span>
+      <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+      <span id="timeEnd">0:00</span>
+    </div>
+    <div class="controls">
+      <button class="ctrl" id="btnBack" disabled>⏪</button>
+      <button class="ctrl main" id="btnPlay" disabled>▶</button>
+      <button class="ctrl" id="btnFwd" disabled>⏩</button>
+      <button class="ctrl" id="btnLoop">🔁</button>
+      <button class="ctrl" id="btnDl" disabled>⬇</button>
+    </div>
+    <canvas id="spectrumCanvas"></canvas>
+  </div>
+
+  <!-- BOOST -->
+  <div class="card" data-tab="boost">
+    <h3>🔊 Âm lượng & Gain Boost</h3>
+    <div class="slider-row">
+      <div class="top"><b>Volume</b><span id="vVol">100%</span></div>
+      <input type="range" id="sVol" min="0" max="400" value="100">
+    </div>
+    <div class="slider-row">
+      <div class="top"><b>Boost (dB)</b><span id="vBoost">0 dB</span></div>
+      <input type="range" id="sBoost" min="0" max="60" step="1" value="0">
+    </div>
+    <div class="slider-row">
+      <div class="top"><b>Gain thô (x)</b><span id="vGain">1.0x</span></div>
+      <input type="range" id="sGain" min="1" max="20" step="0.5" value="1">
+    </div>
+
+    <h3 style="margin-top:14px;">🎚️ Bass / Treble / Mid</h3>
+    <div class="slider-row">
+      <div class="top"><b>Bass (dB)</b><span id="vBass">0 dB</span></div>
+      <input type="range" id="sBass" min="0" max="40" value="0">
+    </div>
+    <div class="slider-row">
+      <div class="top"><b>Treble (dB)</b><span id="vTreble">0 dB</span></div>
+      <input type="range" id="sTreble" min="-20" max="20" value="0">
+    </div>
+    <div class="slider-row">
+      <div class="top"><b>Mid (dB)</b><span id="vMid">0 dB</span></div>
+      <input type="range" id="sMid" min="-20" max="20" value="0">
+    </div>
+  </div>
+
+  <!-- VOCAL BOOST -->
+  <div class="card" data-tab="vocal">
+    <h3>🎤 Vocal Boost Extreme</h3>
+    <div class="toggle-row">
+      <label>Bật Vocal Boost<small>Khuếch đại riêng tần số giọng hát</small></label>
+      <div class="switch"><input type="checkbox" id="vocalOn"><span></span></div>
+    </div>
+    <div class="slider-row" style="margin-top:14px;">
+      <div class="top"><b>Vocal Boost (%)</b><span id="vVocalBoost">100%</span></div>
+      <input type="range" id="sVocalBoost" min="100" max="3000" step="50" value="100">
+    </div>
+    <div class="slider-row">
+      <div class="top"><b>Tần số trung tâm (Hz)</b><span id="vVocalFreq">1500 Hz</span></div>
+      <input type="range" id="sVocalFreq" min="300" max="3000" step="50" value="1500">
+    </div>
+  </div>
+
+  <!-- EQ -->
+  <div class="card" data-tab="eq">
+    <h3>🎚️ EQ 10 băng</h3>
+    <div id="eqBands"></div>
+  </div>
+
+  <!-- VOICE -->
+  <div class="card" data-tab="voice">
+    <h3>🗣️ Đổi giọng & Pitch Shift</h3>
+    <div class="toggle-row">
+      <label>Bật đổi giọng<small>Thay đổi tông cao/trầm</small></label>
+      <div class="switch"><input type="checkbox" id="voiceOn"><span></span></div>
+    </div>
+    <div class="slider-row" style="margin-top:14px;">
+      <div class="top"><b>Pitch (nửa cung)</b><span id="vPitch">0</span></div>
+      <input type="range" id="sPitch" min="-12" max="12" step="1" value="0">
+    </div>
+    <div class="slider-row">
+      <div class="top"><b>Tốc độ</b><span id="vRate">1.0x</span></div>
+      <input type="range" id="sRate" min="0.5" max="2" step="0.05" value="1">
+    </div>
+  </div>
+
+  <!-- SPLIT -->
+  <div class="card" data-tab="split">
+    <h3>✂️ Tách nhạc / Vocal (Center Cancel)</h3>
+    <div class="presets" style="grid-template-columns:repeat(3,1fr);">
+      <button class="preset active" data-split="off">🔘 Gốc</button>
+      <button class="preset" data-split="vocal">🎤 Giọng hát</button>
+      <button class="preset" data-split="inst">🎵 Nhạc nền</button>
+    </div>
+  </div>
+
+  <!-- EXPORT MP3 -->
+  <div class="card" data-tab="export">
+    <h3>📥 Xuất file nhạc MP3</h3>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:12px;">
+      Hệ thống sử dụng Offline Audio Context kết hợp với <b>LAME MP3 Encoder</b> để xuất trực tiếp file MP3 chất lượng cao siêu nhanh.
+    </p>
+    <div class="slider-row">
+      <div class="top"><b>Chất lượng MP3 (Bitrate)</b><span id="vBitrate">192 kbps</span></div>
+      <input type="range" id="sBitrate" min="128" max="320" step="64" value="192">
+    </div>
+    <button class="btn-wide suc" id="btnExportMP3" disabled>⚡ Render & Tải MP3 Ngay</button>
+    <button class="btn-wide dan" id="btnReset">🔄 Reset cài đặt</button>
+  </div>
+
+  <div class="footer">Powered by <b>Senkozzz Audio Studio</b></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+const state = {
+  loop: false, volume: 1.0, boostDB: 0, gain: 1.0,
+  bass: 0, mid: 0, treble: 0,
+  vocalOn: false, vocalBoost: 100, vocalFreq: 1500,
+  voiceOn: false, pitch: 0, rate: 1.0,
+  split: 'off', eqBands: Array(10).fill(0), bitrate: 192
+};
+
+const EQ_FREQS = [32,63,125,250,500,1000,2000,4000,8000,16000];
+const EQ_LABELS = ['32','63','125','250','500','1k','2k','4k','8k','16k'];
+
+const $ = id => document.getElementById(id);
+const toast = $('toast');
+function toastMsg(m){
+  toast.textContent = m; toast.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => toast.classList.remove('show'), 2400);
+}
+
+// Tabs Navigation
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.querySelectorAll('.card').forEach(c => c.classList.toggle('show', c.dataset.tab === t.dataset.tab));
+  });
+});
+
+// Audio Nodes Global
+let audioCtx = null, audioEl = null, rawArrayBuffer = null;
+let srcNode = null, bassNode, midNode, trebleNode, eqNodes = [];
+let gainNode, boostNode, vocalFilter, vocalGainNode, splitSplitter, splitMerger;
+let splitMidGain, splitSideGainL, splitSideGainR, analyserNode;
+
+function initAudioGraph() {
+  if (audioCtx) return; // Đảm bảo chỉ khởi tạo duy nhất 1 lần
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  audioEl = new Audio();
+  audioEl.crossOrigin = 'anonymous';
+
+  // KHẮC PHỤC TRIỆT ĐỂ LỖI 2 LUỒNG ÂM THANH (BỊ VỌNG):
+  // Nối thẻ Audio vào MediaElementSource
+  srcNode = audioCtx.createMediaElementSource(audioEl);
+
+  bassNode = audioCtx.createBiquadFilter(); bassNode.type = 'lowshelf'; bassNode.frequency.value = 200;
+  midNode = audioCtx.createBiquadFilter(); midNode.type = 'peaking'; midNode.frequency.value = 1000;
+  trebleNode = audioCtx.createBiquadFilter(); trebleNode.type = 'highshelf'; trebleNode.frequency.value = 3000;
+
+  eqNodes = EQ_FREQS.map(freq => {
+    const f = audioCtx.createBiquadFilter();
+    f.type = 'peaking'; f.frequency.value = freq; return f;
+  });
+
+  vocalFilter = audioCtx.createBiquadFilter(); vocalFilter.type = 'peaking'; vocalFilter.Q.value = 1.2;
+  vocalGainNode = audioCtx.createGain();
+
+  gainNode = audioCtx.createGain();
+  boostNode = audioCtx.createGain();
+
+  // Split Channel Nodes
+  splitSplitter = audioCtx.createChannelSplitter(2);
+  splitMidGain = audioCtx.createGain();
+  splitSideGainL = audioCtx.createGain();
+  splitSideGainR = audioCtx.createGain();
+  splitMerger = audioCtx.createChannelMerger(2);
+
+  analyserNode = audioCtx.createAnalyser();
+  analyserNode.fftSize = 64;
+
+  // DÂY NỐI CHUẨN ĐƠN LUỒNG (Không nối trực tiếp audioEl ra destination)
+  let current = srcNode;
+  current.connect(bassNode); current = bassNode;
+  current.connect(midNode); current = midNode;
+  current.connect(trebleNode); current = trebleNode;
+
+  eqNodes.forEach(f => { current.connect(f); current = f; });
+
+  current.connect(vocalFilter); current = vocalFilter;
+  current.connect(vocalGainNode); current = vocalGainNode;
+  current.connect(gainNode); current = gainNode;
+  current.connect(boostNode); current = boostNode;
+
+  // Split Routing
+  current.connect(splitSplitter);
+  splitSplitter.connect(splitMidGain, 0);
+  splitSplitter.connect(splitSideGainL, 0);
+  splitSplitter.connect(splitSideGainR, 1);
+  splitMidGain.connect(splitMerger, 0, 0);
+  splitMidGain.connect(splitMerger, 0, 1);
+  splitSideGainL.connect(splitMerger, 0, 1);
+  splitSideGainR.connect(splitMerger, 0, 0);
+
+  splitMerger.connect(analyserNode);
+  analyserNode.connect(audioCtx.destination); // Âm thanh duy nhất ra loa từ đây!
+
+  // Event Audio Handlers
+  audioEl.addEventListener('timeupdate', () => {
+    if (!audioEl.duration) return;
+    $('progressFill').style.width = (audioEl.currentTime / audioEl.duration * 100) + '%';
+    $('timeNow').textContent = fmtTime(audioEl.currentTime);
+  });
+  audioEl.addEventListener('ended', () => {
+    if (state.loop) { audioEl.currentTime = 0; audioEl.play(); }
+    else $('btnPlay').textContent = '▶';
+  });
+}
+
+function applyAudioState() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+
+  gainNode.gain.setTargetAtTime(state.volume * state.gain, t, 0.02);
+  const boostLinear = state.boostDB > 0 ? Math.pow(10, state.boostDB / 20) : 1;
+  boostNode.gain.setTargetAtTime(boostLinear, t, 0.02);
+
+  bassNode.gain.setTargetAtTime(state.bass, t, 0.02);
+  midNode.gain.setTargetAtTime(state.mid, t, 0.02);
+  trebleNode.gain.setTargetAtTime(state.treble, t, 0.02);
+
+  eqNodes.forEach((f, i) => f.gain.setTargetAtTime(state.eqBands[i] || 0, t, 0.02));
+
+  // Vocal Boost
+  vocalFilter.frequency.setTargetAtTime(state.vocalFreq, t, 0.02);
+  if (state.vocalOn) {
+    vocalFilter.gain.setTargetAtTime(12, t, 0.02);
+    vocalGainNode.gain.setTargetAtTime(state.vocalBoost / 100, t, 0.02);
+  } else {
+    vocalFilter.gain.setTargetAtTime(0, t, 0.02);
+    vocalGainNode.gain.setTargetAtTime(1, t, 0.02);
+  }
+
+  // Pitch Shift / Rate
+  const pitchFactor = Math.pow(2, (state.voiceOn ? state.pitch : 0) / 12);
+  if (audioEl) audioEl.playbackRate = state.rate * pitchFactor;
+
+  // Split
+  if (state.split === 'vocal') {
+    splitMidGain.gain.setTargetAtTime(1, t, 0.03);
+    splitSideGainL.gain.setTargetAtTime(0, t, 0.03);
+    splitSideGainR.gain.setTargetAtTime(0, t, 0.03);
+  } else if (state.split === 'inst') {
+    splitMidGain.gain.setTargetAtTime(0, t, 0.03);
+    splitSideGainL.gain.setTargetAtTime(1, t, 0.03);
+    splitSideGainR.gain.setTargetAtTime(1, t, 0.03);
+  } else {
+    splitMidGain.gain.setTargetAtTime(1, t, 0.03);
+    splitSideGainL.gain.setTargetAtTime(1, t, 0.03);
+    splitSideGainR.gain.setTargetAtTime(1, t, 0.03);
+  }
+}
+
+// Visualizer Spectrum Canvas
+const canvas = $('spectrumCanvas'), ctx = canvas.getContext('2d');
+function drawSpectrum() {
+  requestAnimationFrame(drawSpectrum);
+  if (!analyserNode) return;
+  const data = new Uint8Array(analyserNode.frequencyBinCount);
+  analyserNode.getByteFrequencyData(data);
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const barWidth = (canvas.width / data.length) * 2;
+  let x = 0;
+  for (let i = 0; i < data.length; i++) {
+    const barHeight = (data[i] / 255) * canvas.height;
+    ctx.fillStyle = '#ff2d55';
+    ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
+    x += barWidth;
+  }
+}
+drawSpectrum();
+
+// Formats
+function fmtTime(s){ return !isFinite(s)?'0:00':Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'); }
+function fmtSize(b){ return (b/1048576).toFixed(2)+' MB'; }
+
+// Load file
+function loadAudioFile(file) {
+  if (!file) return;
+  initAudioGraph();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  const reader = new FileReader();
+  reader.onload = e => { rawArrayBuffer = e.target.result; };
+  reader.readAsArrayBuffer(file);
+
+  audioEl.src = URL.createObjectURL(file);
+  audioEl.load();
+
+  $('trackInfo').style.display = 'flex';
+  $('progressWrap').style.display = 'flex';
+  $('trackName').textContent = file.name;
+  $('trackMeta').textContent = fmtSize(file.size);
+  $('btnPlay').disabled = $('btnBack').disabled = $('btnFwd').disabled = $('btnDl').disabled = $('btnExportMP3').disabled = false;
+
+  audioEl.onloadedmetadata = () => { $('timeEnd').textContent = fmtTime(audioEl.duration); };
+  toastMsg('✅ Đã tải thành công!');
+}
+
+// Listeners
+$('drop').onclick = () => $('fileInput').click();
+$('fileInput').onchange = e => loadAudioFile(e.target.files[0]);
+
+$('btnPlay').onclick = () => {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (audioEl.paused) { audioEl.play(); $('btnPlay').textContent = '⏸'; }
+  else { audioEl.pause(); $('btnPlay').textContent = '▶'; }
+};
+$('btnBack').onclick = () => audioEl.currentTime = Math.max(0, audioEl.currentTime - 5);
+$('btnFwd').onclick = () => audioEl.currentTime = Math.min(audioEl.duration, audioEl.currentTime + 5);
+$('btnLoop').onclick = () => {
+  state.loop = !state.loop;
+  $('btnLoop').style.background = state.loop ? 'linear-gradient(135deg,#ff2d55,#7c4dff)' : '';
+  toastMsg(state.loop ? '🔁 Bật lặp bài' : '🔁 Tắt lặp bài');
+};
+$('progressBar').onclick = e => {
+  if (!audioEl.duration) return;
+  const rect = $('progressBar').getBoundingClientRect();
+  audioEl.currentTime = ((e.clientX - rect.left) / rect.width) * audioEl.duration;
+};
+
+// Sliders binding
+function bindSlider(id, key, formatFn) {
+  $(id).oninput = e => {
+    state[key] = parseFloat(e.target.value);
+    applyAudioState();
+    if (formatFn) formatFn(state[key]);
+  };
+}
+bindSlider('sVol', 'volume', v => $('vVol').textContent = Math.round(v) + '%');
+bindSlider('sBoost', 'boostDB', v => $('vBoost').textContent = v + ' dB');
+bindSlider('sGain', 'gain', v => $('vGain').textContent = v.toFixed(1) + 'x');
+bindSlider('sBass', 'bass', v => $('vBass').textContent = v + ' dB');
+bindSlider('sMid', 'mid', v => $('vMid').textContent = v + ' dB');
+bindSlider('sTreble', 'treble', v => $('vTreble').textContent = v + ' dB');
+bindSlider('sVocalBoost', 'vocalBoost', v => $('vVocalBoost').textContent = v + '%');
+bindSlider('sVocalFreq', 'vocalFreq', v => $('vVocalFreq').textContent = v + ' Hz');
+bindSlider('sPitch', 'pitch', v => $('vPitch').textContent = v);
+bindSlider('sRate', 'rate', v => $('vRate').textContent = v.toFixed(2) + 'x');
+bindSlider('sBitrate', 'bitrate', v => $('vBitrate').textContent = v + ' kbps');
+
+$('vocalOn').onchange = e => { state.vocalOn = e.target.checked; applyAudioState(); };
+$('voiceOn').onchange = e => { state.voiceOn = e.target.checked; applyAudioState(); };
+
+// EQ Bands UI
+const eqBandsEl = $('eqBands');
+EQ_LABELS.forEach((lb, i) => {
+  const row = document.createElement('div');
+  row.className = 'slider-row';
+  row.innerHTML = `<div class="top"><b>${lb} Hz</b><span id="vEq${i}">0 dB</span></div>
+    <input type="range" id="sEq${i}" min="-20" max="20" step="1" value="0">`;
+  eqBandsEl.appendChild(row);
+  setTimeout(() => {
+    $('sEq' + i).oninput = e => {
+      state.eqBands[i] = parseFloat(e.target.value);
+      $('vEq' + i).textContent = state.eqBands[i] + ' dB';
+      applyAudioState();
+    };
+  }, 0);
+});
+
+// Split
+document.querySelectorAll('.preset[data-split]').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.preset[data-split]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.split = b.dataset.split;
+    applyAudioState();
+  };
+});
+
+// Reset
+$('btnReset').onclick = () => {
+  Object.assign(state, { volume: 1, boostDB: 0, gain: 1, bass: 0, mid: 0, treble: 0, vocalOn: false, voiceOn: false, split: 'off' });
+  applyAudioState();
+  toastMsg('🔄 Đã Reset cài đặt!');
+};
+
+// EXPORT REAL MP3 OFFLINE RENDERER
+$('btnExportMP3').onclick = async () => {
+  if (!rawArrayBuffer) { toastMsg('❌ Chưa chọn file âm thanh!'); return; }
+  toastMsg('⚡ Đang xử lý MP3...');
+
+  const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const decodedBuffer = await tempCtx.decodeAudioData(rawArrayBuffer.slice(0));
+
+  const offlineCtx = new OfflineAudioContext(
+    decodedBuffer.numberOfChannels,
+    decodedBuffer.length,
+    decodedBuffer.sampleRate
+  );
+
+  const source = offlineCtx.createBufferSource();
+  source.buffer = decodedBuffer;
+
+  // Re-create Filter Node Chain cho Offline Processing
+  const bNode = offlineCtx.createBiquadFilter(); bNode.type = 'lowshelf'; bNode.frequency.value = 200; bNode.gain.value = state.bass;
+  const mNode = offlineCtx.createBiquadFilter(); mNode.type = 'peaking'; mNode.frequency.value = 1000; mNode.gain.value = state.mid;
+  const tNode = offlineCtx.createBiquadFilter(); tNode.type = 'highshelf'; tNode.frequency.value = 3000; tNode.gain.value = state.treble;
+
+  const gNode = offlineCtx.createGain(); gNode.gain.value = state.volume * state.gain;
+  const bstNode = offlineCtx.createGain(); bstNode.gain.value = state.boostDB > 0 ? Math.pow(10, state.boostDB / 20) : 1;
+
+  source.connect(bNode); bNode.connect(mNode); mNode.connect(tNode);
+  tNode.connect(gNode); gNode.connect(bstNode); bstNode.connect(offlineCtx.destination);
+
+  source.start(0);
+  const renderedBuffer = await offlineCtx.startRendering();
+
+  // Encode to MP3 bằng lamejs
+  const channels = renderedBuffer.numberOfChannels;
+  const sampleRate = renderedBuffer.sampleRate;
+  const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, state.bitrate);
+
+  const left = renderedBuffer.getChannelData(0);
+  const right = channels > 1 ? renderedBuffer.getChannelData(1) : left;
+
+  const sampleCount = left.length;
+  const leftInt16 = new Int16Array(sampleCount);
+  const rightInt16 = new Int16Array(sampleCount);
+
+  for (let i = 0; i < sampleCount; i++) {
+    leftInt16[i] = Math.max(-1, Math.min(1, left[i])) * 32767;
+    rightInt16[i] = Math.max(-1, Math.min(1, right[i])) * 32767;
+  }
+
+  const mp3Data = [];
+  const bufferSize = 1152;
+  for (let i = 0; i < sampleCount; i += bufferSize) {
+    const lChunk = leftInt16.subarray(i, i + bufferSize);
+    const rChunk = rightInt16.subarray(i, i + bufferSize);
+    const mp3buf = mp3encoder.encodeBuffer(lChunk, rChunk);
+    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+  }
+  const endBuf = mp3encoder.flush();
+  if (endBuf.length > 0) mp3Data.push(endBuf);
+
+  const blob = new Blob(mp3Data, { type: 'audio/mp3' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Senkozzz_boosted.mp3';
+  a.click();
+  toastMsg('✅ Đã xuất file MP3 thành công!');
+};
+
+})();
+</script>
+</body>
+</html>
